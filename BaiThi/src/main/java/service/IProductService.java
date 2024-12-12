@@ -1,5 +1,8 @@
 package service;
 
+import model.Category;
+import model.Product;
+
 import java.util.List;
 
 public interface IProductService <E>{
@@ -9,4 +12,8 @@ public interface IProductService <E>{
     void delete(int id);
     void edit(int id, E e);
     List<E> findByName(String name);
+
+    List<Product> findByPrice(double price);
+
+    List<Category> findByCategory();
 }

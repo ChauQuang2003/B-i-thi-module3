@@ -16,8 +16,7 @@ public class ProductService implements IProductService<Product> {
 
     @Override
     public void add(Product product) {
-        String sql = "insert into product(name, price, quantity, color, description,category) values(?,?,?,?,?,?,?)";
-
+        String sql = "insert into product(name, price, quantity, color, description,category_id) values(?,?,?,?,?,?)";
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             preparedStatement.setString(1, product.getName());
@@ -25,12 +24,11 @@ public class ProductService implements IProductService<Product> {
             preparedStatement.setInt(3, product.getQuantity());
             preparedStatement.setString(4, product.getColor());
             preparedStatement.setString(5, product.getDescription());
-
-
+            preparedStatement.setInt(6, product.getCategoryId().getId());
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     @Override
@@ -67,9 +65,9 @@ public class ProductService implements IProductService<Product> {
             preparedStatement.setString(1, product.getName());
             preparedStatement.setDouble(2, product.getPrice());
             preparedStatement.setInt(3, product.getQuantity());
-            preparedStatement.setInt(4, product.getCategory().getId());
             preparedStatement.setString(5, product.getColor());
             preparedStatement.setString(6, product.getDescription());
+            preparedStatement.setInt(6, product.getCategoryId().getId());
             preparedStatement.setInt(7, id);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
@@ -84,12 +82,7 @@ public class ProductService implements IProductService<Product> {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             preparedStatement.setInt(1, id);
-            int rowsAffected = preparedStatement.executeUpdate();
-            if (rowsAffected > 0) {
-                System.out.println("Xóa thành công sản phẩm với ID: " + id);
-            } else {
-                System.out.println("Không tìm thấy sản phẩm với ID: " + id);
-            }
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi khi xóa sản phẩm", e);
         }
@@ -102,6 +95,78 @@ public class ProductService implements IProductService<Product> {
 
     @Override
     public List<Product> findByName(String name) {
-        return null;
+        List<Product> products = new ArrayList<>();
+        String sql = "SELECT p.id AS id, p.name AS name, p.price AS price, " +
+                "p.quantity AS quantity, p.color AS color, p.description AS description, " +
+                "c.id AS cid, c.name AS categoryName " +
+                "FROM product p " +
+                "LEFT JOIN category c ON p.category_id = c.id " +
+                "WHERE LOWER(p.name) LIKE LOWER(?)";
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, "%" + name + "%");
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Category category = new Category(resultSet.getInt("cid"), resultSet.getString("categoryName"));
+                Product product = new Product(resultSet.getInt("id"),
+                        resultSet.getString("name"),
+                        resultSet.getDouble("price"),
+                        resultSet.getInt("quantity"),
+                        resultSet.getString("color"),
+                        resultSet.getString("description"),
+                        category);
+                products.add(product);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return products;
+    }
+
+    @Override
+    public List<Product> findByPrice(double price) {
+        List<Product> products = new ArrayList<>();
+        String sql = "SELECT p.id AS id, p.name AS name, p.price AS price, " +
+                "p.quantity AS quantity, p.color AS color, p.description AS description, " +
+                "c.id AS cid, c.name AS categoryName " +
+                "FROM product p " +
+                "LEFT JOIN category c ON p.category_id = c.id " +
+                "WHERE price <= ? ";
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, "%" + price + "%");
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Category category = new Category(resultSet.getInt("cid"), resultSet.getString("categoryName"));
+                Product product = new Product(resultSet.getInt("id"),
+                        resultSet.getString("name"),
+                        resultSet.getDouble("price"),
+                        resultSet.getInt("quantity"),
+                        resultSet.getString("color"),
+                        resultSet.getString("description"),
+                        category);
+                products.add(product);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return products;
+    }
+
+    @Override
+    public List<Category> findByCategory() {
+        List<Category> categories = new ArrayList<>();
+        String sql = "select * from category";
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Category category = new Category(resultSet.getInt("id"), resultSet.getString("name"));
+                categories.add(category);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return categories;
     }
 }
